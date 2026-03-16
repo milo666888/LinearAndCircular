@@ -206,7 +206,9 @@ input[type=range]::-moz-range-thumb {
   font-size: 22px; cursor: pointer;
   box-shadow: 0 4px 20px rgba(48,96,224,0.4);
   z-index: 200; align-items: center; justify-content: center;
+  transition: transform 0.18s, background 0.18s;
 }
+.fab:active { transform: scale(0.88); }
 .mob-overlay {
   display: none; position: fixed; inset: 0; z-index: 100; pointer-events: none;
 }
@@ -329,7 +331,7 @@ input[type=range]::-moz-range-thumb {
 </div>
 
 <!-- Mobile FAB -->
-<button class="fab" onclick="openDrawer()">☰</button>
+<button class="fab" id="FAB" onclick="toggleDrawer()">☰</button>
 
 <!-- Mobile drawer — mirrors the panel (also static DOM) -->
 <div class="mob-overlay" id="MOV">
@@ -810,8 +812,12 @@ canvas.addEventListener('touchend',e=>{
 // ═══════════════════════════════════
 //  MOBILE DRAWER
 // ═══════════════════════════════════
-function openDrawer()  { document.getElementById('MOV').classList.add('open'); }
-function closeDrawer() { document.getElementById('MOV').classList.remove('open'); }
+function toggleDrawer() {
+  document.getElementById('MOV').classList.toggle('open');
+}
+function closeDrawer() {
+  document.getElementById('MOV').classList.remove('open');
+}
 
 // ═══ INIT ═══
 resize();
