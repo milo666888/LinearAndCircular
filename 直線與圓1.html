@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>直線與圓的關係 — 互動教具</title>
+<style>
+:root {
+  --bg: #f4f5fa;
+  --white: #ffffff;
+  --surface2: #eef0f8;
+  --border: #d8dcea;
+  --accent: #3060e0;
+  --cc: #3060e0;   /* circle colour */
+  --lc: #b85c00;   /* line colour */
+  --pc: #15803d;   /* point colour */
+  --text: #1a1f36;
+  --dim: #5a6280;
+  --light: #9098b8;
+  --pw: 370px;
+  --f: 'Times New Roman', 'Noto Serif TC', Georgia, serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--f);
+  background: var(--bg); color: var(--text);
+  overflow: hidden; height: 100dvh; width: 100vw;
+  display: flex; flex-direction: column; font-size: 16px;
+}
+
+/* ── Header ── */
+header {
+  height: 64px; display: flex; align-items: center;
+  padding: 0 18px; background: var(--white);
+  border-bottom: 1.5px solid var(--border);
+  z-index: 30; flex-shrink: 0; gap: 12px;
+}
+.logo-area { display: flex; align-items: center; flex-shrink: 0; }
+.logo-img { height: 38px; width: auto; object-fit: contain; }
+.logo-ph {
+  height: 38px; width: 38px; background: var(--surface2);
+  border: 1.5px dashed #c0c8e0; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--light); text-align: center; line-height: 1.3;
+}
+.hd-sep { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
+.hd-title { flex: 1; min-width: 0; }
+.hd-title h1 {
+  font-size: 21px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hd-title p { font-size: 13px; color: var(--dim); margin-top: 2px; }
+.hd-btns { flex-shrink: 0; }
+.btn {
+  padding: 8px 18px; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 15px; color: var(--dim); cursor: pointer;
+  font-family: var(--f); transition: all 0.15s;
+}
+.btn:hover { color: var(--accent); border-color: var(--accent); background: #eef2ff; }
+
+/* ── Layout ── */
+.main { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+/* ── Left Panel ── */
+.panel {
+  width: var(--pw); background: var(--white);
+  border-right: 1.5px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; flex-shrink: 0; z-index: 10;
+}
+.panel::-webkit-scrollbar { width: 5px; }
+.panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.sec { padding: 18px 20px; border-bottom: 1.5px solid var(--border); }
+.sec-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 14px;
+}
+.sec-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dc { background: var(--cc); }
+.dl { background: var(--lc); }
+.dr { background: var(--pc); }
+
+/* Equation display */
+.eq-box {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 14px 20px;
+  font-size: 20px; color: var(--text); margin-bottom: 14px;
+  line-height: 1.7; min-height: 58px; display: flex; align-items: center;
+  letter-spacing: 0.02em;
+}
+.eq-box i { font-style: italic; }
+.eq-box .op { margin: 0 0.28em; display: inline-block; }
+.eq-box sup { font-size: 0.65em; vertical-align: 0.55em; line-height: 0; position: relative; top: -0.1em; }
+
+/* Input grid */
+.ig { display: grid; gap: 10px; margin-bottom: 14px; }
+.ig.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.ig.g2 { grid-template-columns: 1fr 1fr; }
+.ig.g1 { grid-template-columns: 1fr; }
+.pi { display: flex; flex-direction: column; gap: 4px; }
+.pi label { font-size: 14px; color: var(--dim); padding-left: 2px; }
+.pi label i { font-style: italic; }
+.pi input[type=number] {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+  font-family: var(--f); font-size: 16px; color: var(--text);
+  outline: none; transition: border-color 0.15s; width: 100%;
+  -moz-appearance: textfield;
+}
+.pi input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.pi input.ic:focus { border-color: var(--cc); }
+.pi input.il:focus { border-color: var(--lc); }
+
+/* ── Sliders ──
+   KEY FIX: touch-action: pan-x  (not none)
+   This tells the browser "horizontal touch = slider", so it
+   passes the event to the input instead of the canvas handler.
+   The slider must NOT be recreated during drag (static DOM). */
+.sr { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sl {
+  font-style: italic; font-size: 15px; color: var(--dim);
+  width: 24px; flex-shrink: 0; text-align: right;
+}
+input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 6px; background: var(--border); border-radius: 3px;
+  outline: none; cursor: pointer;
+  touch-action: pan-x;   /* ← THE FIX */
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 3px solid var(--white);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 3px solid var(--white);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+.rc::-webkit-slider-thumb { background: var(--cc); }
+.rl::-webkit-slider-thumb { background: var(--lc); }
+.rc::-moz-range-thumb { background: var(--cc); }
+.rl::-moz-range-thumb { background: var(--lc); }
+
+/* Mode toggle */
+.mode-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.mode-btn {
+  flex: 1; padding: 9px 6px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 14px; color: var(--dim);
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  font-family: var(--f); font-style: italic;
+}
+.mode-btn.on { background: #eef2ff; border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+/* Snap badge */
+.snap-badge {
+  display: none; align-items: center; gap: 6px;
+  background: #eef2ff; border: 1.5px solid #c0d0f8;
+  border-radius: 100px; padding: 5px 14px;
+  font-size: 14px; color: var(--accent); margin-top: 10px;
+}
+.snap-badge.on { display: flex; }
+
+/* ── Floating relation box (always on canvas) ── */
+#floatRel {
+  position: absolute; bottom: 20px; right: 20px; z-index: 20;
+  min-width: 210px; max-width: 270px;
+  background: rgba(255,255,255,0.95);
+  border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(26,31,54,0.10);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  font-family: var(--f); pointer-events: none;
+  transition: border-color 0.3s, background 0.3s;
+}
+#floatRel.none { background: rgba(255,244,243,0.96); border-color: #f9a8a0; }
+#floatRel.tan  { background: rgba(240,253,244,0.96); border-color: #86efac; }
+#floatRel.two  { background: rgba(239,246,255,0.96); border-color: #93c5fd; }
+.frn { font-size: 17px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+#floatRel.none .frn { color: #b91c1c; }
+#floatRel.tan  .frn { color: #15803d; }
+#floatRel.two  .frn { color: #1d4ed8; }
+.frb { font-size: 14px; color: var(--dim); line-height: 1.9; }
+.frb i { font-style: italic; }
+.frb b { color: var(--text); font-weight: 700; }
+.frpts { margin-top: 7px; }
+.frpt { display: flex; align-items: center; gap: 7px; font-size: 13px; margin-top: 4px; }
+.frdot { width: 7px; height: 7px; border-radius: 50%; background: var(--pc); flex-shrink: 0; }
+.frxy { color: var(--pc); font-weight: 600; }
+
+/* Canvas */
+#canvas { flex: 1; display: block; cursor: default; touch-action: none; background: #fff; }
+
+/* Mobile */
+.fab {
+  display: none; position: fixed; bottom: 20px; left: 20px;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 22px; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(48,96,224,0.4);
+  z-index: 200; align-items: center; justify-content: center;
+}
+.mob-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100; pointer-events: none;
+}
+.mob-overlay.open { pointer-events: all; }
+.mob-bg {
+  position: absolute; inset: 0; background: rgba(10,15,40,0.35);
+  opacity: 0; transition: opacity 0.28s;
+}
+.mob-overlay.open .mob-bg { opacity: 1; }
+.mob-drawer {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: min(90vw, 370px); background: var(--white);
+  border-right: 1.5px solid var(--border);
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.32,0.72,0,1);
+}
+.mob-overlay.open .mob-drawer { transform: translateX(0); }
+.mob-dh {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1.5px solid var(--border);
+}
+.mob-dt { font-size: 18px; font-weight: 700; }
+.mob-x {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  font-size: 18px; color: var(--dim);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .panel { display: none; }
+  .fab { display: flex; }
+  .mob-overlay { display: block; }
+  .hd-title p { display: none; }
+  .hd-title h1 { font-size: 18px; }
+  #floatRel { max-width: calc(100vw - 44px); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <img class="logo-img" id="logoImg" src="company-logo.png"
+         onerror="this.style.display='none';document.getElementById('logoPH').style.display='flex';" alt="Logo">
+    <div class="logo-ph" id="logoPH" style="display:none">LOGO</div>
+  </div>
+  <div class="hd-sep"></div>
+  <div class="hd-title">
+    <h1>直線與圓的關係</h1>
+    <p>互動幾何教具 &nbsp;·&nbsp; 拖曳圖形或編輯方程式參數</p>
+  </div>
+  <div class="hd-btns">
+    <button class="btn" onclick="resetAll()">↺ 重置</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ══ LEFT PANEL — STATIC DOM (never recreated) ══ -->
+  <div class="panel">
+    <!-- Circle section -->
+    <div class="sec">
+      <div class="sec-title"><span class="sec-dot dc"></span>圓的方程式</div>
+      <div class="eq-box" id="circleEq"></div>
+      <div class="ig g3">
+        <div class="pi"><label><i>a</i> (圓心 <i>x</i>)</label>
+          <input class="ic" id="nCx" type="number" step="0.1" oninput="S.cx=+this.value;redraw()"></div>
+        <div class="pi"><label><i>b</i> (圓心 <i>y</i>)</label>
+          <input class="ic" id="nCy" type="number" step="0.1" oninput="S.cy=+this.value;redraw()"></div>
+        <div class="pi"><label><i>r</i> (半徑)</label>
+          <input class="ic" id="nR"  type="number" step="0.1" min="0.1" oninput="S.r=Math.max(0.1,+this.value);redraw()"></div>
+      </div>
+      <div class="sr"><span class="sl">a</span><input type="range" class="rc" id="sCx" min="-8" max="8" step="0.05" oninput="S.cx=+this.value;redraw()"></div>
+      <div class="sr"><span class="sl">b</span><input type="range" class="rc" id="sCy" min="-8" max="8" step="0.05" oninput="S.cy=+this.value;redraw()"></div>
+      <div class="sr"><span class="sl">r</span><input type="range" class="rc" id="sR"  min="0.2" max="7"  step="0.05" oninput="S.r=+this.value;redraw()"></div>
+    </div>
+
+    <!-- Line section -->
+    <div class="sec">
+      <div class="sec-title"><span class="sec-dot dl"></span>直線方程式</div>
+      <div class="mode-row">
+        <button class="mode-btn" id="btnSlope"    onclick="setMode('slope')"><i>y</i> = <i>mx</i> + <i>k</i></button>
+        <button class="mode-btn" id="btnVertical" onclick="setMode('vertical')"><i>x</i> = <i>c</i>（垂直線）</button>
+      </div>
+      <div class="eq-box" id="lineEq"></div>
+      <!-- slope params -->
+      <div id="slopeParams">
+        <div class="ig g2">
+          <div class="pi"><label><i>m</i> (斜率)</label>
+            <input class="il" id="nM" type="number" step="0.1" oninput="S.m=+this.value;redraw()"></div>
+          <div class="pi"><label><i>k</i> (截距)</label>
+            <input class="il" id="nK" type="number" step="0.1" oninput="S.k=+this.value;redraw()"></div>
+        </div>
+        <div class="sr"><span class="sl">m</span><input type="range" class="rl" id="sM" min="-8" max="8" step="0.05" oninput="S.m=+this.value;redraw()"></div>
+        <div class="sr"><span class="sl">k</span><input type="range" class="rl" id="sK" min="-8" max="8" step="0.05" oninput="S.k=+this.value;redraw()"></div>
+      </div>
+      <!-- vertical params -->
+      <div id="vertParams" style="display:none">
+        <div class="ig g1">
+          <div class="pi"><label><i>c</i> (x 截距)</label>
+            <input class="il" id="nVx" type="number" step="0.1" oninput="S.vx=+this.value;redraw()"></div>
+        </div>
+        <div class="sr"><span class="sl">c</span><input type="range" class="rl" id="sVx" min="-8" max="8" step="0.05" oninput="S.vx=+this.value;redraw()"></div>
+      </div>
+      <div class="snap-badge" id="snapBadge">⊕ <span id="snapText"></span></div>
+    </div>
+
+  </div>
+
+  <!-- Canvas -->
+  <canvas id="canvas"></canvas>
+
+  <!-- Floating relation box (mobile always-on + desktop redundant) -->
+  <div id="floatRel">
+    <div class="frn"><span id="frIco"></span><span id="frName"></span></div>
+    <div class="frb" id="frBody"></div>
+  </div>
+</div>
+
+<!-- Mobile FAB -->
+<button class="fab" onclick="openDrawer()">☰</button>
+
+<!-- Mobile drawer — mirrors the panel (also static DOM) -->
+<div class="mob-overlay" id="MOV">
+  <div class="mob-bg" onclick="closeDrawer()"></div>
+  <div class="mob-drawer">
+    <div class="mob-dh">
+      <span class="mob-dt">方程式與設定</span>
+      <button class="mob-x" onclick="closeDrawer()">✕</button>
+    </div>
+    <!-- Circle -->
+    <div class="sec">
+      <div class="sec-title"><span class="sec-dot dc"></span>圓的方程式</div>
+      <div class="eq-box" id="mCircleEq"></div>
+      <div class="ig g3">
+        <div class="pi"><label><i>a</i> (圓心 <i>x</i>)</label>
+          <input class="ic" id="mnCx" type="number" step="0.1" oninput="S.cx=+this.value;redraw()"></div>
+        <div class="pi"><label><i>b</i> (圓心 <i>y</i>)</label>
+          <input class="ic" id="mnCy" type="number" step="0.1" oninput="S.cy=+this.value;redraw()"></div>
+        <div class="pi"><label><i>r</i> (半徑)</label>
+          <input class="ic" id="mnR"  type="number" step="0.1" min="0.1" oninput="S.r=Math.max(0.1,+this.value);redraw()"></div>
+      </div>
+      <div class="sr"><span class="sl">a</span><input type="range" class="rc" id="msCx" min="-8" max="8" step="0.05" oninput="S.cx=+this.value;redraw()"></div>
+      <div class="sr"><span class="sl">b</span><input type="range" class="rc" id="msCy" min="-8" max="8" step="0.05" oninput="S.cy=+this.value;redraw()"></div>
+      <div class="sr"><span class="sl">r</span><input type="range" class="rc" id="msR"  min="0.2" max="7"  step="0.05" oninput="S.r=+this.value;redraw()"></div>
+    </div>
+    <!-- Line -->
+    <div class="sec">
+      <div class="sec-title"><span class="sec-dot dl"></span>直線方程式</div>
+      <div class="mode-row">
+        <button class="mode-btn" id="mBtnSlope"    onclick="setMode('slope')"><i>y</i> = <i>mx</i> + <i>k</i></button>
+        <button class="mode-btn" id="mBtnVertical" onclick="setMode('vertical')"><i>x</i> = <i>c</i>（垂直線）</button>
+      </div>
+      <div class="eq-box" id="mLineEq"></div>
+      <div id="mSlopeParams">
+        <div class="ig g2">
+          <div class="pi"><label><i>m</i> (斜率)</label>
+            <input class="il" id="mnM" type="number" step="0.1" oninput="S.m=+this.value;redraw()"></div>
+          <div class="pi"><label><i>k</i> (截距)</label>
+            <input class="il" id="mnK" type="number" step="0.1" oninput="S.k=+this.value;redraw()"></div>
+        </div>
+        <div class="sr"><span class="sl">m</span><input type="range" class="rl" id="msM" min="-8" max="8" step="0.05" oninput="S.m=+this.value;redraw()"></div>
+        <div class="sr"><span class="sl">k</span><input type="range" class="rl" id="msK" min="-8" max="8" step="0.05" oninput="S.k=+this.value;redraw()"></div>
+      </div>
+      <div id="mVertParams" style="display:none">
+        <div class="ig g1">
+          <div class="pi"><label><i>c</i> (x 截距)</label>
+            <input class="il" id="mnVx" type="number" step="0.1" oninput="S.vx=+this.value;redraw()"></div>
+        </div>
+        <div class="sr"><span class="sl">c</span><input type="range" class="rl" id="msVx" min="-8" max="8" step="0.05" oninput="S.vx=+this.value;redraw()"></div>
+      </div>
+      <div class="snap-badge" id="mSnapBadge">⊕ <span id="mSnapText"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+//  STATE
+// ═══════════════════════════════════
+const S = {
+  cx:0, cy:0, r:3,
+  lineMode:'slope',
+  m:1, k:-1, vx:2,
+  originX:0, originY:0, scale:60,
+  _init:false,
+  dragging:null, dragRef:null,
+  snapActive:false, snapType:'',
+};
+
+// ═══════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+let dpr = window.devicePixelRatio || 1;
+const FU = "Times New Roman, Noto Serif TC, Georgia, serif";
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width  = rect.width  + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if (!S._init) {
+    S.originX = rect.width  / 2;
+    S.originY = rect.height / 2;
+    S._init = true;
+  }
+  redraw();
+}
+window.addEventListener('resize', resize);
+
+const toS = (mx,my) => ({ x:S.originX+mx*S.scale, y:S.originY-my*S.scale });
+const toM = (sx,sy) => ({ x:(sx-S.originX)/S.scale, y:-(sy-S.originY)/S.scale });
+const fmt = v => { const r=Math.round(v*100)/100; return r===0?'0':String(r); };
+
+// ═══════════════════════════════════
+//  GEOMETRY
+// ═══════════════════════════════════
+function lABC() {
+  return S.lineMode==='vertical' ? {a:1,b:0,c:-S.vx} : {a:S.m,b:-1,c:S.k};
+}
+function distCL() {
+  const {a,b,c}=lABC();
+  return Math.abs(a*S.cx+b*S.cy+c)/Math.sqrt(a*a+b*b);
+}
+function intersect() {
+  const d=distCL(), r=S.r, {a,b,c}=lABC(), l2=a*a+b*b;
+  const fx=S.cx-a*(a*S.cx+b*S.cy+c)/l2;
+  const fy=S.cy-b*(a*S.cx+b*S.cy+c)/l2;
+  if (d>r+1e-9) return {type:'none',pts:[]};
+  if (Math.abs(d-r)<1e-9) return {type:'tan',pts:[{x:fx,y:fy}]};
+  const h=Math.sqrt(r*r-d*d), sq=Math.sqrt(l2);
+  return {type:'two',pts:[{x:fx-b/sq*h,y:fy+a/sq*h},{x:fx+b/sq*h,y:fy-a/sq*h}]};
+}
+
+// ═══════════════════════════════════
+//  SNAP
+// ═══════════════════════════════════
+function applySnap() {
+  S.snapActive=false; S.snapType='';
+  if (S.dragging!=='line') return;
+  const d=distCL();
+  if (d<0.18) { snapCenter(); S.snapActive=true; S.snapType='center'; return; }
+  if (Math.abs(d-S.r)<0.1) { snapTangent(); S.snapActive=true; S.snapType='tan'; }
+}
+function snapCenter() {
+  if (S.lineMode==='vertical') S.vx=S.cx; else S.k=S.cy-S.m*S.cx;
+}
+function snapTangent() {
+  const {a,b,c}=lABC(), len=Math.sqrt(a*a+b*b);
+  const sign=(a*S.cx+b*S.cy+c)>=0?1:-1;
+  if (S.lineMode==='vertical') S.vx=S.cx+sign*S.r;
+  else S.k=S.r*len*sign-S.m*S.cx+S.cy;
+}
+
+// ═══════════════════════════════════
+//  HIT TEST
+// ═══════════════════════════════════
+function hitTest(sx,sy) {
+  const sp=toS(S.cx,S.cy);
+  if (Math.hypot(sx-sp.x,sy-sp.y)<18) return 'circle';
+  const {a,b,c}=lABC(), len=Math.sqrt(a*a+b*b);
+  const mx=(sx-S.originX)/S.scale, my=-(sy-S.originY)/S.scale;
+  if (Math.abs(a*mx+b*my+c)/len*S.scale<12) return 'line';
+  return null;
+}
+
+// ═══════════════════════════════════
+//  DRAW
+// ═══════════════════════════════════
+function redraw() {
+  const W=canvas.width/dpr, H=canvas.height/dpr;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  drawGrid(W,H);
+  drawAxes(W,H);
+  drawLine(W,H);
+  drawDist();
+  drawCircle();
+  drawPts();
+  updatePanel();
+}
+
+function drawGrid(W,H) {
+  const sc=S.scale, ox=S.originX, oy=S.originY;
+  ctx.strokeStyle='rgba(48,96,224,0.07)'; ctx.lineWidth=1;
+  for (let i=Math.floor(-ox/sc); i<=Math.ceil((W-ox)/sc); i++) {
+    const x=ox+i*sc; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  }
+  for (let i=Math.floor((oy-H)/sc); i<=Math.ceil(oy/sc); i++) {
+    const y=oy-i*sc; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+}
+
+function drawAxes(W,H) {
+  const ox=S.originX, oy=S.originY, sc=S.scale;
+  ctx.strokeStyle='rgba(26,31,54,0.22)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(W,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,0); ctx.lineTo(ox,H); ctx.stroke();
+  ctx.fillStyle='rgba(26,31,54,0.22)';
+  ctx.beginPath(); ctx.moveTo(W-9,oy-5); ctx.lineTo(W,oy); ctx.lineTo(W-9,oy+5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ox-5,9);   ctx.lineTo(ox,0); ctx.lineTo(ox+5,9);   ctx.fill();
+  ctx.fillStyle='rgba(40,55,120,0.65)';
+  ctx.font=`italic bold 18px ${FU}`;
+  // x label: sits just to the left of the right arrow tip, above the axis
+  ctx.textAlign='right'; ctx.fillText('x', W - 4, oy - 8);
+  // y label: sits just to the right of the top arrow tip
+  ctx.textAlign='left';  ctx.fillText('y', ox + 8, 16);
+  ctx.font=`italic 16px ${FU}`; ctx.textAlign='right';
+  ctx.fillStyle='rgba(80,95,145,0.65)'; ctx.fillText('O', ox-8, oy+18);
+  ctx.font=`16px ${FU}`; ctx.fillStyle='rgba(80,95,145,0.65)';
+  for (let i=Math.floor(-ox/sc); i<=Math.ceil((W-ox)/sc); i++) {
+    if (!i) continue; ctx.textAlign='center'; ctx.fillText(i, ox+i*sc, oy+18);
+  }
+  for (let i=Math.floor((oy-H)/sc); i<=Math.ceil(oy/sc); i++) {
+    if (!i) continue; ctx.textAlign='right'; ctx.fillText(i, ox-9, oy-i*sc+5);
+  }
+}
+
+function drawLine(W,H) {
+  ctx.strokeStyle='#b85c00'; ctx.lineWidth=2.5; ctx.setLineDash([]);
+  if (S.lineMode==='vertical') {
+    const x=toS(S.vx,0).x;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  } else {
+    const mt=toM(0,0).y, mb=toM(0,H).y;
+    if (Math.abs(S.m)<1e-7) {
+      const y=toS(0,S.k).y; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    } else {
+      const p1=toS((mt-S.k)/S.m,mt), p2=toS((mb-S.k)/S.m,mb);
+      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+    }
+  }
+}
+
+function drawDist() {
+  const d=distCL(); if (d<0.06) return;
+  const {a,b,c}=lABC(), l2=a*a+b*b;
+  const fx=S.cx-a*(a*S.cx+b*S.cy+c)/l2;
+  const fy=S.cy-b*(a*S.cx+b*S.cy+c)/l2;
+  const sc=toS(S.cx,S.cy), sf=toS(fx,fy);
+  ctx.strokeStyle='rgba(160,80,0,0.55)'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(sc.x,sc.y); ctx.lineTo(sf.x,sf.y); ctx.stroke();
+  ctx.setLineDash([]);
+  const lx=(sc.x+sf.x)/2+16, ly=(sc.y+sf.y)/2-7;
+  ctx.fillStyle='rgba(140,75,0,0.82)';
+  ctx.font=`italic 16px ${FU}`; ctx.textAlign='left';
+  ctx.fillText('d', lx, ly);
+  ctx.font=`16px ${FU}`;
+  ctx.fillText(` = ${fmt(d)}`, lx+ctx.measureText('d').width+2, ly);
+}
+
+function drawCircle() {
+  const sp=toS(S.cx,S.cy), r=S.r*S.scale;
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,r,0,Math.PI*2);
+  ctx.fillStyle='rgba(48,96,224,0.06)'; ctx.fill();
+  ctx.strokeStyle='#3060e0'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,6,0,Math.PI*2);
+  ctx.fillStyle='#3060e0'; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+  ctx.strokeStyle='rgba(48,96,224,0.3)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(sp.x,sp.y-r); ctx.stroke();
+  ctx.setLineDash([]);
+  const lx=sp.x+6, ly=sp.y-r/2-4;
+  ctx.fillStyle='rgba(40,80,200,0.8)';
+  ctx.font=`italic 16px ${FU}`; ctx.textAlign='left';
+  ctx.fillText('r', lx, ly);
+  ctx.font=`16px ${FU}`;
+  ctx.fillText(` = ${fmt(S.r)}`, lx+ctx.measureText('r').width+2, ly);
+}
+
+function drawPts() {
+  intersect().pts.forEach((pt,i) => {
+    const sp=toS(pt.x,pt.y);
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,14,0,Math.PI*2);
+    ctx.fillStyle='rgba(21,128,61,0.1)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,6,0,Math.PI*2);
+    ctx.fillStyle='#15803d'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#14532d';
+    ctx.font=`16px ${FU}`; ctx.textAlign='left';
+    ctx.fillText(`(${fmt(pt.x)}, ${fmt(pt.y)})`, sp.x+11, sp.y-4+i*20);
+  });
+}
+
+// ═══════════════════════════════════
+//  UPDATE PANEL (no DOM recreation)
+// ═══════════════════════════════════
+function circleEqHTML() {
+  // (x − a)² + (y − b)² = r²
+  // Use <sup>2</sup> for squares, .op for operators
+  const ax = S.cx === 0
+    ? `<i>x</i><sup>2</sup>`
+    : `(<i>x</i><span class="op">&minus;</span>${fmt(Math.abs(S.cx))})<sup>2</sup>`;
+  // flip sign display: if cx<0, we subtracted a negative = add
+  const axFixed = S.cx === 0
+    ? `<i>x</i><sup>2</sup>`
+    : S.cx > 0
+      ? `(<i>x</i><span class="op">&minus;</span>${fmt(S.cx)})<sup>2</sup>`
+      : `(<i>x</i><span class="op">+</span>${fmt(Math.abs(S.cx))})<sup>2</sup>`;
+  const ayFixed = S.cy === 0
+    ? `<i>y</i><sup>2</sup>`
+    : S.cy > 0
+      ? `(<i>y</i><span class="op">&minus;</span>${fmt(S.cy)})<sup>2</sup>`
+      : `(<i>y</i><span class="op">+</span>${fmt(Math.abs(S.cy))})<sup>2</sup>`;
+  return `${axFixed}<span class="op">+</span>${ayFixed}<span class="op">=</span>${fmt(S.r)}<sup>2</sup>`;
+}
+function lineEqHTML() {
+  if (S.lineMode === 'vertical')
+    return `<i>x</i><span class="op">=</span>${fmt(S.vx)}`;
+  const ms = fmt(S.m);
+  let mp;
+  if      (ms === '1')  mp = `<i>x</i>`;
+  else if (ms === '-1') mp = `<span class="op">&minus;</span><i>x</i>`;
+  else if (+ms < 0)     mp = `<span class="op">&minus;</span>${fmt(Math.abs(+ms))}<i>x</i>`;
+  else                  mp = `${ms}<i>x</i>`;
+  const kAbs = fmt(Math.abs(S.k));
+  const kPart = S.k >= 0
+    ? `<span class="op">+</span>${kAbs}`
+    : `<span class="op">&minus;</span>${kAbs}`;
+  return `<i>y</i><span class="op">=</span>${mp}${kPart}`;
+}
+
+function setVal(id, v) { const el=document.getElementById(id); if(el) el.value=v; }
+function setHTML(id, h) { const el=document.getElementById(id); if(el) el.innerHTML=h; }
+
+function updatePanel() {
+  const d=distCL(), r=S.r, disc=r*r-d*d;
+  const res=intersect();
+
+  // ── Equations ──
+  const ceq=circleEqHTML(), leq=lineEqHTML();
+  setHTML('circleEq', ceq); setHTML('mCircleEq', ceq);
+  setHTML('lineEq',   leq); setHTML('mLineEq',   leq);
+
+  // ── Number inputs (only update if not focused to avoid cursor jump) ──
+  function safeSet(id, v) {
+    const el=document.getElementById(id);
+    if (el && document.activeElement!==el) el.value=fmt(v);
+  }
+  safeSet('nCx',fmt(S.cx)); safeSet('nCy',fmt(S.cy)); safeSet('nR',fmt(S.r));
+  safeSet('nM',fmt(S.m));   safeSet('nK',fmt(S.k));   safeSet('nVx',fmt(S.vx));
+  safeSet('mnCx',fmt(S.cx));safeSet('mnCy',fmt(S.cy));safeSet('mnR',fmt(S.r));
+  safeSet('mnM',fmt(S.m));  safeSet('mnK',fmt(S.k));  safeSet('mnVx',fmt(S.vx));
+
+  // ── Sliders ──
+  setVal('sCx',S.cx); setVal('sCy',S.cy); setVal('sR',S.r);
+  setVal('sM',S.m);   setVal('sK',S.k);   setVal('sVx',S.vx);
+  setVal('msCx',S.cx);setVal('msCy',S.cy);setVal('msR',S.r);
+  setVal('msM',S.m);  setVal('msK',S.k);  setVal('msVx',S.vx);
+
+  // ── Mode toggle ──
+  const ms=S.lineMode==='slope';
+  document.getElementById('btnSlope')   .classList.toggle('on', ms);
+  document.getElementById('btnVertical').classList.toggle('on', !ms);
+  document.getElementById('mBtnSlope')  .classList.toggle('on', ms);
+  document.getElementById('mBtnVertical').classList.toggle('on', !ms);
+  document.getElementById('slopeParams').style.display = ms?'':'none';
+  document.getElementById('vertParams') .style.display = ms?'none':'';
+  document.getElementById('mSlopeParams').style.display = ms?'':'none';
+  document.getElementById('mVertParams') .style.display = ms?'none':'';
+
+  // ── Snap ──
+  const snapEl=document.getElementById('snapBadge');
+  const mSnapEl=document.getElementById('mSnapBadge');
+  const snapTxt=S.snapActive?(S.snapType==='center'?'吸附：過圓心':'吸附：切線位置'):'';
+  document.getElementById('snapText').textContent=snapTxt;
+  document.getElementById('mSnapText').textContent=snapTxt;
+  snapEl.classList.toggle('on',S.snapActive);
+  mSnapEl.classList.toggle('on',S.snapActive);
+
+  // ── Relation data ──
+  let cls='',ico='',name='',cond='';
+  if      (res.type==='none'){ cls='none';ico='○';name='不相交';     cond=`<i>d</i><span class="op" style="margin:0 0.25em">&gt;</span><i>r</i> &nbsp;( ${fmt(d)} &gt; ${fmt(r)} )`; }
+  else if (res.type==='tan') { cls='tan'; ico='◎';name='相切（交於一點）'; cond=`<i>d</i><span class="op" style="margin:0 0.25em">=</span><i>r</i> &nbsp;( ${fmt(d)} = ${fmt(r)} )`;  }
+  else                       { cls='two'; ico='⊙';name='交於兩點';    cond=`<i>d</i><span class="op" style="margin:0 0.25em">&lt;</span><i>r</i> &nbsp;( ${fmt(d)} &lt; ${fmt(r)} )`; }
+  const discSign=disc<-1e-6?' &lt; 0':Math.abs(disc)<1e-6?' = 0':' &gt; 0';
+  const ptsH=res.pts.map((p,i)=>
+    `<div class="rpt"><div class="rdot"></div><span class="rxy">${['A','B'][i]} = (${fmt(p.x)}, ${fmt(p.y)})</span></div>`
+  ).join('');
+  const bodyHTML=`條件：<b>${cond}</b><br><i>d</i><span class="op" style="margin:0 0.25em">=</span>${fmt(d)} &ensp;｜&ensp; <i>r</i><span class="op" style="margin:0 0.25em">=</span>${fmt(r)}<br><i>r</i><sup style="font-size:0.72em;vertical-align:super">2</sup><span class="op" style="margin:0 0.25em">&minus;</span><i>d</i><sup style="font-size:0.72em;vertical-align:super">2</sup><span class="op" style="margin:0 0.25em">=</span><b>${fmt(disc)}</b>${discSign}`;
+
+  // Float box
+  const fb=document.getElementById('floatRel');
+  fb.className=cls;
+  document.getElementById('frIco').textContent=ico;
+  document.getElementById('frName').textContent=name;
+  const frPtsH=res.pts.map((p,i)=>
+    `<div class="frpt"><div class="frdot"></div><span class="frxy">${['A','B'][i]} = (${fmt(p.x)}, ${fmt(p.y)})</span></div>`
+  ).join('');
+  setHTML('frBody', bodyHTML+'<div class="frpts">'+frPtsH+'</div>');
+}
+
+// ═══════════════════════════════════
+//  MODE TOGGLE
+// ═══════════════════════════════════
+function setMode(m) {
+  S.lineMode=m; redraw();
+}
+
+// ═══════════════════════════════════
+//  RESET
+// ═══════════════════════════════════
+function resetAll() {
+  S.cx=0; S.cy=0; S.r=3;
+  S.lineMode='slope'; S.m=1; S.k=-1; S.vx=2;
+  S.snapActive=false; S.snapType=''; S.dragging=null;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  S.originX=rect.width/2; S.originY=rect.height/2; S.scale=60;
+  redraw();
+}
+
+// ═══════════════════════════════════
+//  MOUSE
+// ═══════════════════════════════════
+let panRef=null, dragRef=null;
+function getPos(e) {
+  const r=canvas.getBoundingClientRect();
+  return {x:e.clientX-r.left, y:e.clientY-r.top};
+}
+canvas.addEventListener('mousedown', e=>{
+  e.preventDefault();
+  const p=getPos(e), hit=hitTest(p.x,p.y);
+  if (hit) { S.dragging=hit; dragRef={sx:p.x,sy:p.y,cx:S.cx,cy:S.cy,k:S.k,vx:S.vx}; canvas.style.cursor='grabbing'; }
+  else     { S.dragging='pan'; panRef={sx:p.x,sy:p.y,ox:S.originX,oy:S.originY}; canvas.style.cursor='move'; }
+});
+canvas.addEventListener('mousemove', e=>{
+  const p=getPos(e);
+  if (!S.dragging) { canvas.style.cursor=hitTest(p.x,p.y)?'grab':'default'; return; }
+  if (S.dragging==='pan') { S.originX=panRef.ox+(p.x-panRef.sx); S.originY=panRef.oy+(p.y-panRef.sy); redraw(); return; }
+  if (S.dragging==='circle') {
+    const dm=toM(p.x,p.y), dr=toM(dragRef.sx,dragRef.sy);
+    S.cx=Math.round((dragRef.cx+dm.x-dr.x)*20)/20;
+    S.cy=Math.round((dragRef.cy+dm.y-dr.y)*20)/20;
+  } else {
+    const dm=toM(p.x,p.y), dr=toM(dragRef.sx,dragRef.sy);
+    if (S.lineMode==='vertical') S.vx=dragRef.vx+(dm.x-dr.x);
+    else S.k=dragRef.k+(dm.y-dr.y)-S.m*(dm.x-dr.x);
+  }
+  applySnap(); redraw();
+});
+canvas.addEventListener('mouseup',()=>{ S.dragging=null; panRef=null; dragRef=null; S.snapActive=false; canvas.style.cursor='default'; redraw(); });
+canvas.addEventListener('mouseleave',()=>{ S.dragging=null; panRef=null; dragRef=null; S.snapActive=false; });
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const p=getPos(e), f=e.deltaY<0?1.12:0.89, old=S.scale;
+  S.scale=Math.max(20,Math.min(300,S.scale*f));
+  S.originX=p.x-(p.x-S.originX)*(S.scale/old);
+  S.originY=p.y-(p.y-S.originY)*(S.scale/old);
+  redraw();
+},{passive:false});
+
+// ═══════════════════════════════════
+//  TOUCH (canvas only)
+// ═══════════════════════════════════
+let pinchDist=null, tDragRef=null, tPanRef=null;
+function getTPos(t) {
+  const r=canvas.getBoundingClientRect();
+  return {x:t.clientX-r.left, y:t.clientY-r.top};
+}
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if (e.touches.length===2) {
+    pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    S.dragging=null; return;
+  }
+  const p=getTPos(e.touches[0]), hit=hitTest(p.x,p.y);
+  if (hit) { S.dragging=hit; tDragRef={sx:p.x,sy:p.y,cx:S.cx,cy:S.cy,k:S.k,vx:S.vx}; }
+  else     { S.dragging='pan'; tPanRef={sx:p.x,sy:p.y,ox:S.originX,oy:S.originY}; }
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if (e.touches.length===2&&pinchDist) {
+    const nd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    S.scale=Math.max(20,Math.min(300,S.scale*nd/pinchDist)); pinchDist=nd; redraw(); return;
+  }
+  const p=getTPos(e.touches[0]);
+  if (S.dragging==='pan') { S.originX=tPanRef.ox+(p.x-tPanRef.sx); S.originY=tPanRef.oy+(p.y-tPanRef.sy); redraw(); return; }
+  if (S.dragging==='circle') {
+    const dm=toM(p.x,p.y), dr=toM(tDragRef.sx,tDragRef.sy);
+    S.cx=Math.round((tDragRef.cx+dm.x-dr.x)*20)/20;
+    S.cy=Math.round((tDragRef.cy+dm.y-dr.y)*20)/20;
+  } else if (S.dragging==='line') {
+    const dm=toM(p.x,p.y), dr=toM(tDragRef.sx,tDragRef.sy);
+    if (S.lineMode==='vertical') S.vx=tDragRef.vx+(dm.x-dr.x);
+    else S.k=tDragRef.k+(dm.y-dr.y)-S.m*(dm.x-dr.x);
+  }
+  applySnap(); redraw();
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  e.preventDefault();
+  S.dragging=null; pinchDist=null; tDragRef=null; tPanRef=null; S.snapActive=false; redraw();
+},{passive:false});
+
+// ═══════════════════════════════════
+//  MOBILE DRAWER
+// ═══════════════════════════════════
+function openDrawer()  { document.getElementById('MOV').classList.add('open'); }
+function closeDrawer() { document.getElementById('MOV').classList.remove('open'); }
+
+// ═══ INIT ═══
+resize();
+</script>
+</body>
+</html>
